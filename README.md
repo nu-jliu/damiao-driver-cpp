@@ -1,4 +1,4 @@
-# damiao_driver
+# DaMiao Motor Driver
 
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-blue?logo=cplusplus&logoColor=white)
 ![CMake](https://img.shields.io/badge/CMake-3.22+-064F8C?logo=cmake&logoColor=white)
