@@ -152,6 +152,12 @@ damiao-driver-cpp/
 | **Catch2** | 3.8.1 | Unit tests (fetched automatically) |
 | **Doxygen** | optional | API documentation generation |
 
+## Recommended Hardware
+
+| Adapter | Interface | Notes |
+|---|---|---|
+| [Pibiger USB to CAN Adapter](https://www.amazon.com/Pibiger-Analyzer-Speed-Isolated-Against/dp/B0CGPSDG8V) | SocketCAN | Isolated, high-speed, works out of the box on Linux |
+
 ## Installation
 
 ### Install dependencies (Ubuntu/Debian)
