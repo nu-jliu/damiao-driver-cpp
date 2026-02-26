@@ -1,9 +1,11 @@
 #include <cstdio>
 
-#include "damiao/damiao.hpp"
+#include "damiao_driver/damiao_driver.hpp"
 
-int main() {
-  try {
+int main()
+{
+  try
+  {
     dm::CanBus bus("can0");
     dm::DmMotor motor(bus, 0x01);
 
@@ -20,8 +22,9 @@ int main() {
     // Disable motor
     motor.disable();
     std::printf("Motor disabled\n");
-
-  } catch (const std::exception & e) {
+  }
+  catch (const std::exception &e)
+  {
     std::fprintf(stderr, "Error: %s\n", e.what());
     return 1;
   }

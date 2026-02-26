@@ -1,7 +1,7 @@
 #pragma once
 
-#include "damiao/comm_bus.hpp"
-#include "damiao/types.hpp"
+#include "damiao_driver/comm_bus.hpp"
+#include "damiao_driver/types.hpp"
 
 namespace dm
 {

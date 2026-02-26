@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(damiao)
+project(damiao_driver)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -26,11 +26,11 @@ install(TARGETS ${PROJECT_NAME}
   RUNTIME DESTINATION bin
 )
 
-install(DIRECTORY include/damiao DESTINATION include)
+install(DIRECTORY include/damiao_driver DESTINATION include)
 
 install(EXPORT ${PROJECT_NAME}Targets
   FILE ${PROJECT_NAME}Targets.cmake
-  NAMESPACE damiao::
+  NAMESPACE damiao_driver::
   DESTINATION lib/cmake/${PROJECT_NAME}
 )
 

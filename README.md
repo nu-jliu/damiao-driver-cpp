@@ -1,4 +1,4 @@
-# damiao-driver-cpp
+# damiao_driver
 
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-blue?logo=cplusplus&logoColor=white)
 ![CMake](https://img.shields.io/badge/CMake-3.22+-064F8C?logo=cmake&logoColor=white)
@@ -120,8 +120,8 @@ sequenceDiagram
 ```
 damiao-driver-cpp/
 ├── CMakeLists.txt
-├── include/damiao/
-│   ├── damiao.hpp          # single-include header
+├── include/damiao_driver/
+│   ├── damiao_driver.hpp          # single-include header
 │   ├── types.hpp           # enums, structs, conversions
 │   ├── comm_bus.hpp        # abstract bus interface
 │   ├── can_bus.hpp         # Linux SocketCAN
@@ -177,7 +177,7 @@ make -j$(nproc)
 sudo make install
 ```
 
-This installs headers to `/usr/local/include/damiao/` and the library to `/usr/local/lib/`.
+This installs headers to `/usr/local/include/damiao_driver/` and the library to `/usr/local/lib/`.
 
 ### Build with tests
 
@@ -208,15 +208,15 @@ make docs
 ### Use in your CMake project
 
 ```cmake
-find_package(damiao REQUIRED)
-target_link_libraries(your_target PRIVATE damiao::damiao)
+find_package(damiao_driver REQUIRED)
+target_link_libraries(your_target PRIVATE damiao_driver::damiao_driver)
 ```
 
 ### MIT Mode Control (CAN bus)
 
 ```cpp
 #include <cstdio>
-#include "damiao/damiao.hpp"
+#include "damiao_driver/damiao_driver.hpp"
 
 int main() {
   try {

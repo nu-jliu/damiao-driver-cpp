@@ -3,21 +3,24 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
-#include "damiao/motor.hpp"
+#include "damiao_driver/motor.hpp"
 
 using Catch::Matchers::WithinAbs;
 
 // Mock CommBus for testing (no real CAN/UART)
-class MockBus : public dm::CommBus {
+class MockBus : public dm::CommBus
+{
 public:
   dm::CanFrame last_sent{};
   dm::CanFrame next_response{};
   bool has_response = false;
 
-  void send(const dm::CanFrame & frame) override { last_sent = frame; }
+  void send(const dm::CanFrame &frame) override { last_sent = frame; }
 
-  bool receive(dm::CanFrame & frame, const int /*timeout_ms*/) override {
-    if (has_response) {
+  bool receive(dm::CanFrame &frame, const int /*timeout_ms*/) override
+  {
+    if (has_response)
+    {
       frame = next_response;
       return true;
     }
@@ -25,13 +28,15 @@ public:
   }
 };
 
-TEST_CASE("MIT mode encoding", "[motor]") {
+TEST_CASE("MIT mode encoding", "[motor]")
+{
   MockBus bus;
   dm::DmMotor motor(bus, 0x01);
 
-  SECTION("Zero command encodes to midpoints") {
+  SECTION("Zero command encodes to midpoints")
+  {
     motor.sendMit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-    const auto & f = bus.last_sent;
+    const auto &f = bus.last_sent;
 
     REQUIRE(f.id == 0x01);
     REQUIRE(f.len == 8);
@@ -41,22 +46,25 @@ TEST_CASE("MIT mode encoding", "[motor]") {
     REQUIRE(f.data[1] == 0xFF);
   }
 
-  SECTION("CAN ID is motor_id") {
+  SECTION("CAN ID is motor_id")
+  {
     motor.sendMit(1.0f, 2.0f, 10.0f, 1.0f, 0.5f);
     REQUIRE(bus.last_sent.id == 0x01);
   }
 }
 
-TEST_CASE("Position-Speed mode encoding", "[motor]") {
+TEST_CASE("Position-Speed mode encoding", "[motor]")
+{
   MockBus bus;
   dm::DmMotor motor(bus, 0x01);
 
-  SECTION("Encodes float values in little-endian") {
+  SECTION("Encodes float values in little-endian")
+  {
     const float p_des = 1.5f;
     const float v_des = 3.0f;
 
     motor.sendPositionSpeed(p_des, v_des);
-    const auto & f = bus.last_sent;
+    const auto &f = bus.last_sent;
 
     REQUIRE(f.id == 0x101);
     REQUIRE(f.len == 8);
@@ -70,15 +78,17 @@ TEST_CASE("Position-Speed mode encoding", "[motor]") {
   }
 }
 
-TEST_CASE("Speed mode encoding", "[motor]") {
+TEST_CASE("Speed mode encoding", "[motor]")
+{
   MockBus bus;
   dm::DmMotor motor(bus, 0x02);
 
-  SECTION("Encodes velocity and zeros padding") {
+  SECTION("Encodes velocity and zeros padding")
+  {
     const float v_des = 5.0f;
 
     motor.sendSpeed(v_des);
-    const auto & f = bus.last_sent;
+    const auto &f = bus.last_sent;
 
     REQUIRE(f.id == 0x202);
     REQUIRE(f.len == 8);
@@ -94,33 +104,39 @@ TEST_CASE("Speed mode encoding", "[motor]") {
   }
 }
 
-TEST_CASE("Special commands produce correct frames", "[motor]") {
+TEST_CASE("Special commands produce correct frames", "[motor]")
+{
   MockBus bus;
   dm::DmMotor motor(bus, 0x03);
 
-  SECTION("Enable command") {
+  SECTION("Enable command")
+  {
     motor.enable();
     REQUIRE(bus.last_sent.id == 0x03);
     REQUIRE(bus.last_sent.data == dm::ENABLE_CMD);
   }
 
-  SECTION("Disable command") {
+  SECTION("Disable command")
+  {
     motor.disable();
     REQUIRE(bus.last_sent.data == dm::DISABLE_CMD);
   }
 
-  SECTION("Save zero position command") {
+  SECTION("Save zero position command")
+  {
     motor.saveZeroPosition();
     REQUIRE(bus.last_sent.data == dm::SAVE_ZERO_CMD);
   }
 
-  SECTION("Clear error command") {
+  SECTION("Clear error command")
+  {
     motor.clearError();
     REQUIRE(bus.last_sent.data == dm::CLEAR_ERROR_CMD);
   }
 }
 
-TEST_CASE("Feedback decoding from known bytes", "[motor]") {
+TEST_CASE("Feedback decoding from known bytes", "[motor]")
+{
   MockBus bus;
   dm::DmMotor motor(bus, 0x01);
 
@@ -138,7 +154,7 @@ TEST_CASE("Feedback decoding from known bytes", "[motor]") {
 
   // D[3] full + D[4] upper nibble: velocity = midpoint (0x7FF) -> ~0.0 rad/s
   response.data[3] = 0x7F;
-  response.data[4] = 0xF0 | 0x07;  // v[3:0]=0xF, t[11:8]=0x7
+  response.data[4] = 0xF0 | 0x07; // v[3:0]=0xF, t[11:8]=0x7
 
   // D[4] lower nibble + D[5]: torque = midpoint (0x7FF) -> ~0.0 Nm
   response.data[5] = 0xFF;
@@ -161,12 +177,13 @@ TEST_CASE("Feedback decoding from known bytes", "[motor]") {
   REQUIRE(fb.t_rotor == 25);
 }
 
-TEST_CASE("Accessor methods", "[motor]") {
+TEST_CASE("Accessor methods", "[motor]")
+{
   MockBus bus;
   dm::DmMotor motor(bus, 0x05);
 
   REQUIRE(motor.motorId() == 0x05);
 
-  const auto & fb = motor.lastFeedback();
-  REQUIRE(fb.motor_id == 0);  // Default-initialized
+  const auto &fb = motor.lastFeedback();
+  REQUIRE(fb.motor_id == 0); // Default-initialized
 }
