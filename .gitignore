@@ -1,0 +1,5 @@
+**/build/**
+**/install/**
+**/cmake_install.cmake
+**/.vscode/**
+**/.idea/**
