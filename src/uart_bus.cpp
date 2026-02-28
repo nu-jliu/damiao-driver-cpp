@@ -8,8 +8,40 @@
 namespace dm
 {
 
-  UartBus::UartBus(const std::string &device, const unsigned int baud_rate)
-      : io_(), port_(io_, device)
+  // --- Static members ---
+
+  std::mutex UartBus::registry_mutex_;
+  std::unordered_map<std::string, std::weak_ptr<UartBus>> UartBus::registry_;
+
+  // --- Factory ---
+
+  std::shared_ptr<UartBus> UartBus::create(const std::string &device,
+                                           const unsigned int baud_rate)
+  {
+    std::lock_guard<std::mutex> lock(registry_mutex_);
+
+    auto it = registry_.find(device);
+    if (it != registry_.end())
+    {
+      auto existing = it->second.lock();
+      if (existing)
+      {
+        return existing;
+      }
+      // weak_ptr expired – keep the stale entry alive until the new instance
+      // is allocated so that the old make_shared control-block (and its
+      // memory region) is not reused for the new object.
+    }
+
+    auto instance = std::make_shared<UartBus>(PrivateTag{}, device, baud_rate);
+    registry_[device] = instance; // replaces stale weak_ptr if present
+    return instance;
+  }
+
+  // --- Constructor / Destructor ---
+
+  UartBus::UartBus(PrivateTag, const std::string &device, const unsigned int baud_rate)
+      : io_(), port_(io_, device), device_name_(device)
   {
     using boost::asio::serial_port_base;
     port_.set_option(serial_port_base::baud_rate(baud_rate));
@@ -27,6 +59,17 @@ namespace dm
       boost::system::error_code ec;
       port_.close(ec);
     }
+    // Registry cleanup is handled lazily by create() when it finds an expired
+    // weak_ptr.  Keeping the stale weak_ptr alive also keeps the make_shared
+    // control-block allocated, which prevents the allocator from immediately
+    // reusing the same address for the next instance.
+  }
+
+  // --- Public interface ---
+
+  const std::string &UartBus::deviceName() const
+  {
+    return device_name_;
   }
 
   void UartBus::send(const CanFrame &frame)
@@ -60,9 +103,8 @@ namespace dm
   bool UartBus::receive(CanFrame &frame, const int timeout_ms)
   {
     // Expect: [0xAA, 0x55, id_high, id_low, len, data..., checksum]
-    // Min packet size: header(2) + id(2) + len(1) + checksum(1) = 6, plus data
     constexpr size_t HEADER_SIZE = 5;
-    constexpr size_t MAX_PACKET = HEADER_SIZE + 8 + 1; // max 8 data bytes + checksum
+    constexpr size_t MAX_PACKET = HEADER_SIZE + 8 + 1;
 
     auto raw = receive_raw_(MAX_PACKET, timeout_ms);
     if (raw.size() < HEADER_SIZE + 1)

@@ -47,13 +47,13 @@ if(BUILD_TESTS)
 
   enable_testing()
 
-  add_executable(test_types tests/test_types.cpp)
-  target_link_libraries(test_types PRIVATE ${PROJECT_NAME} Catch2::Catch2WithMain)
-  add_test(NAME test_types COMMAND test_types)
-
-  add_executable(test_motor tests/test_motor.cpp)
-  target_link_libraries(test_motor PRIVATE ${PROJECT_NAME} Catch2::Catch2WithMain)
-  add_test(NAME test_motor COMMAND test_motor)
+  file(GLOB TEST_FILES tests/test_*.cpp)
+  foreach(TEST_FILE ${TEST_FILES})
+    get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
+    add_executable(${TEST_NAME} ${TEST_FILE})
+    target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAME} Catch2::Catch2WithMain)
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+  endforeach()
 endif()
 
 # --- Examples ---

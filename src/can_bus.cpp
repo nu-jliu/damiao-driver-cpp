@@ -2,7 +2,6 @@
 
 #include <cstring>
 #include <stdexcept>
-#include <utility>
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
@@ -15,7 +14,39 @@
 namespace dm
 {
 
-  CanBus::CanBus(const std::string &interface)
+  // --- Static members ---
+
+  std::mutex CanBus::registry_mutex_;
+  std::unordered_map<std::string, std::weak_ptr<CanBus>> CanBus::registry_;
+
+  // --- Factory ---
+
+  std::shared_ptr<CanBus> CanBus::create(const std::string &interface)
+  {
+    std::lock_guard<std::mutex> lock(registry_mutex_);
+
+    auto it = registry_.find(interface);
+    if (it != registry_.end())
+    {
+      auto existing = it->second.lock();
+      if (existing)
+      {
+        return existing;
+      }
+      // weak_ptr expired – keep the stale entry alive until the new instance
+      // is allocated so that the old make_shared control-block (and its
+      // memory region) is not reused for the new object.
+    }
+
+    auto instance = std::make_shared<CanBus>(PrivateTag{}, interface);
+    registry_[interface] = instance; // replaces stale weak_ptr if present
+    return instance;
+  }
+
+  // --- Constructor / Destructor ---
+
+  CanBus::CanBus(PrivateTag, const std::string &interface)
+      : interface_name_(interface)
   {
     socket_fd_ = ::socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if (socket_fd_ < 0)
@@ -51,25 +82,17 @@ namespace dm
     {
       ::close(socket_fd_);
     }
+    // Registry cleanup is handled lazily by create() when it finds an expired
+    // weak_ptr.  Keeping the stale weak_ptr alive also keeps the make_shared
+    // control-block allocated, which prevents the allocator from immediately
+    // reusing the same address for the next instance.
   }
 
-  CanBus::CanBus(CanBus &&other) noexcept : socket_fd_(other.socket_fd_)
-  {
-    other.socket_fd_ = -1;
-  }
+  // --- Public interface ---
 
-  CanBus &CanBus::operator=(CanBus &&other) noexcept
+  const std::string &CanBus::interfaceName() const
   {
-    if (this != &other)
-    {
-      if (socket_fd_ >= 0)
-      {
-        ::close(socket_fd_);
-      }
-      socket_fd_ = other.socket_fd_;
-      other.socket_fd_ = -1;
-    }
-    return *this;
+    return interface_name_;
   }
 
   void CanBus::send(const CanFrame &frame)

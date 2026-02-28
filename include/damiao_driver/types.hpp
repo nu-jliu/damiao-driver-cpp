@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <stdexcept>
 
 namespace dm
 {
@@ -27,6 +28,13 @@ namespace dm
     Overload = 0xE
   };
 
+  /// Motor type enum for supported Damiao motor models
+  enum class MotorType : uint8_t
+  {
+    DM_J4310, ///< DM-J4310-2EC: 10:1 gear ratio, 10Nm peak, 30 rad/s
+    DM_J4340  ///< DM-J4340-2EC: 40:1 gear ratio, 28Nm peak, 10 rad/s
+  };
+
   // --- Structs ---
 
   struct MotorParams
@@ -38,8 +46,25 @@ namespace dm
     float kd_max; // Max Kd gain
   };
 
-  /// Default parameters for DM-J4310
+  /// Default parameters for DM-J4310-2EC (gear ratio 10:1)
   constexpr MotorParams DM_J4310_DEFAULTS = {12.5f, 30.0f, 10.0f, 500.0f, 5.0f};
+
+  /// Default parameters for DM-J4340-2EC (gear ratio 40:1)
+  constexpr MotorParams DM_J4340_DEFAULTS = {12.5f, 10.0f, 28.0f, 500.0f, 5.0f};
+
+  /// Look up default MotorParams for a given MotorType
+  inline constexpr MotorParams motor_params_for(MotorType type)
+  {
+    switch (type)
+    {
+    case MotorType::DM_J4310:
+      return DM_J4310_DEFAULTS;
+    case MotorType::DM_J4340:
+      return DM_J4340_DEFAULTS;
+    default:
+      return DM_J4310_DEFAULTS;
+    }
+  }
 
   struct Feedback
   {

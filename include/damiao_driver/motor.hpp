@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "damiao_driver/comm_bus.hpp"
 #include "damiao_driver/types.hpp"
 
@@ -9,10 +11,18 @@ namespace dm
   class DmMotor
   {
   public:
+    /// Construct a motor with a MotorType enum (recommended).
+    /// Automatically selects the correct MotorParams for the given motor model.
     DmMotor(
-        CommBus &bus,
+        std::shared_ptr<CommBus> bus,
         const uint16_t motor_id,
-        const MotorParams &params = DM_J4310_DEFAULTS);
+        const MotorType motor_type = MotorType::DM_J4310);
+
+    /// Construct a motor with custom MotorParams (advanced usage).
+    DmMotor(
+        std::shared_ptr<CommBus> bus,
+        const uint16_t motor_id,
+        const MotorParams &params);
 
     // --- Motor lifecycle ---
     Feedback enable();
@@ -40,7 +50,7 @@ namespace dm
     Feedback decode_feedback_(const CanFrame &frame) const;
     Feedback send_and_receive_(const CanFrame &frame);
 
-    CommBus &bus_;
+    std::shared_ptr<CommBus> bus_;
     uint16_t motor_id_;
     MotorParams params_;
     Feedback last_feedback_{};

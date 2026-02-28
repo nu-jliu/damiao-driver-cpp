@@ -1,12 +1,19 @@
 #include "damiao_driver/motor.hpp"
 
 #include <cstring>
+#include <utility>
 
 namespace dm
 {
 
-  DmMotor::DmMotor(CommBus &bus, const uint16_t motor_id, const MotorParams &params)
-      : bus_(bus), motor_id_(motor_id), params_(params) {}
+  DmMotor::DmMotor(std::shared_ptr<CommBus> bus, const uint16_t motor_id,
+                   const MotorType motor_type)
+      : bus_(std::move(bus)), motor_id_(motor_id),
+        params_(motor_params_for(motor_type)) {}
+
+  DmMotor::DmMotor(std::shared_ptr<CommBus> bus, const uint16_t motor_id,
+                   const MotorParams &params)
+      : bus_(std::move(bus)), motor_id_(motor_id), params_(params) {}
 
   // --- Motor lifecycle ---
 
@@ -166,10 +173,10 @@ namespace dm
 
   Feedback DmMotor::send_and_receive_(const CanFrame &frame)
   {
-    bus_.send(frame);
+    bus_->send(frame);
 
     CanFrame response;
-    if (bus_.receive(response))
+    if (bus_->receive(response))
     {
       last_feedback_ = decode_feedback_(response);
     }
