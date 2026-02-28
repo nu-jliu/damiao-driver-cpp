@@ -43,7 +43,7 @@ namespace dm
 
   struct Feedback
   {
-    uint8_t motor_id;
+    uint16_t motor_id;
     MotorError error;
     float position;  // rad
     float velocity;  // rad/s

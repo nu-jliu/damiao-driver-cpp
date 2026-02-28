@@ -11,7 +11,7 @@ namespace dm
   public:
     DmMotor(
         CommBus &bus,
-        const uint8_t motor_id,
+        const uint16_t motor_id,
         const MotorParams &params = DM_J4310_DEFAULTS);
 
     // --- Motor lifecycle ---
@@ -27,7 +27,7 @@ namespace dm
     Feedback sendSpeed(const float v_des);
 
     // --- Accessors ---
-    uint8_t motorId() const;
+    uint16_t motorId() const;
     const Feedback &lastFeedback() const;
 
   private:
@@ -41,7 +41,7 @@ namespace dm
     Feedback send_and_receive_(const CanFrame &frame);
 
     CommBus &bus_;
-    uint8_t motor_id_;
+    uint16_t motor_id_;
     MotorParams params_;
     Feedback last_feedback_{};
   };

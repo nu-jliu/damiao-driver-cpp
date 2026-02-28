@@ -60,7 +60,7 @@ classDiagram
 
     class DmMotor {
         -bus_ : CommBus&
-        -motor_id_ : uint8_t
+        -motor_id_ : uint16_t
         -params_ : MotorParams
         +enable() Feedback
         +disable() Feedback
@@ -80,7 +80,7 @@ classDiagram
     }
 
     class Feedback {
-        +motor_id : uint8_t
+        +motor_id : uint16_t
         +error : MotorError
         +position : float
         +velocity : float
@@ -221,7 +221,7 @@ target_link_libraries(your_target PRIVATE damiao_driver::damiao_driver)
 ### MIT Mode Control (CAN bus)
 
 ```cpp
-#include <cstdio>
+#include <iostream>
 #include "damiao_driver/damiao_driver.hpp"
 
 int main() {
@@ -230,16 +230,17 @@ int main() {
     dm::DmMotor motor(bus, 0x01);
 
     auto fb = motor.enable();
-    std::printf("Enabled motor %u\n", fb.motor_id);
+    std::cout << "Enabled motor " << fb.motor_id << "\n";
 
     // Hold position at 0 rad with Kp=50, Kd=1
     fb = motor.sendMit(0.0f, 0.0f, 50.0f, 1.0f, 0.0f);
-    std::printf("Pos: %.3f rad  Vel: %.3f rad/s  Torque: %.3f Nm\n",
-                fb.position, fb.velocity, fb.torque);
+    std::cout << "Pos: " << fb.position << " rad  "
+              << "Vel: " << fb.velocity << " rad/s  "
+              << "Torque: " << fb.torque << " Nm\n";
 
     motor.disable();
   } catch (const std::exception & e) {
-    std::fprintf(stderr, "Error: %s\n", e.what());
+    std::cerr << "Error: " << e.what() << "\n";
     return 1;
   }
 }
@@ -335,6 +336,8 @@ graph LR
 | **MIT** | `motor_id` | position, velocity, Kp, Kd, torque | Full impedance control |
 | **Position-Speed** | `0x100 + motor_id` | position, velocity | Trajectory tracking |
 | **Speed** | `0x200 + motor_id` | velocity | Constant-speed tasks |
+
+> Motor ID (`uint16_t`) supports values from `0x01` to `0x5FF`.
 
 ## DM-J4310 Default Limits
 

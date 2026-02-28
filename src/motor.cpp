@@ -5,7 +5,7 @@
 namespace dm
 {
 
-  DmMotor::DmMotor(CommBus &bus, const uint8_t motor_id, const MotorParams &params)
+  DmMotor::DmMotor(CommBus &bus, const uint16_t motor_id, const MotorParams &params)
       : bus_(bus), motor_id_(motor_id), params_(params) {}
 
   // --- Motor lifecycle ---
@@ -50,7 +50,7 @@ namespace dm
 
   // --- Accessors ---
 
-  uint8_t DmMotor::motorId() const { return motor_id_; }
+  uint16_t DmMotor::motorId() const { return motor_id_; }
 
   const Feedback &DmMotor::lastFeedback() const { return last_feedback_; }
 

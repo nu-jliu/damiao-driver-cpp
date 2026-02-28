@@ -42,8 +42,8 @@ TEST_CASE("MIT mode encoding", "[motor]")
     REQUIRE(f.len == 8);
 
     // p_des=0 -> midpoint of 16-bit = 0x7FFF
-    REQUIRE(f.data[0] == 0x7F);
-    REQUIRE(f.data[1] == 0xFF);
+    REQUIRE(f.data.at(0) == 0x7F);
+    REQUIRE(f.data.at(1) == 0xFF);
   }
 
   SECTION("CAN ID is motor_id")
@@ -97,10 +97,10 @@ TEST_CASE("Speed mode encoding", "[motor]")
     std::memcpy(&v_decoded, f.data.data(), sizeof(float));
     REQUIRE(v_decoded == v_des);
 
-    REQUIRE(f.data[4] == 0);
-    REQUIRE(f.data[5] == 0);
-    REQUIRE(f.data[6] == 0);
-    REQUIRE(f.data[7] == 0);
+    REQUIRE(f.data.at(4) == 0x00);
+    REQUIRE(f.data.at(5) == 0x00);
+    REQUIRE(f.data.at(6) == 0x00);
+    REQUIRE(f.data.at(7) == 0x00);
   }
 }
 
@@ -186,4 +186,45 @@ TEST_CASE("Accessor methods", "[motor]")
 
   const auto &fb = motor.lastFeedback();
   REQUIRE(fb.motor_id == 0); // Default-initialized
+}
+
+TEST_CASE("Wide CAN ID support", "[motor]")
+{
+  MockBus bus;
+
+  SECTION("Motor ID at upper bound (0x5FF)")
+  {
+    dm::DmMotor motor(bus, 0x5FF);
+
+    REQUIRE(motor.motorId() == 0x5FF);
+
+    motor.sendMit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    REQUIRE(bus.last_sent.id == 0x5FF);
+
+    motor.sendPositionSpeed(1.0f, 2.0f);
+    REQUIRE(bus.last_sent.id == 0x6FF); // 0x100 + 0x5FF
+
+    motor.sendSpeed(1.0f);
+    REQUIRE(bus.last_sent.id == 0x7FF); // 0x200 + 0x5FF
+
+    motor.enable();
+    REQUIRE(bus.last_sent.id == 0x5FF);
+    REQUIRE(bus.last_sent.data == dm::ENABLE_CMD);
+  }
+
+  SECTION("Motor ID beyond uint8_t range (0x3A7)")
+  {
+    dm::DmMotor motor(bus, 0x3A7);
+
+    REQUIRE(motor.motorId() == 0x3A7);
+
+    motor.sendMit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    REQUIRE(bus.last_sent.id == 0x3A7);
+
+    motor.sendPositionSpeed(1.0f, 2.0f);
+    REQUIRE(bus.last_sent.id == 0x4A7); // 0x100 + 0x3A7
+
+    motor.sendSpeed(1.0f);
+    REQUIRE(bus.last_sent.id == 0x5A7); // 0x200 + 0x3A7
+  }
 }
