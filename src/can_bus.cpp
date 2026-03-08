@@ -90,7 +90,7 @@ namespace dm
 
   // --- Public interface ---
 
-  const std::string &CanBus::interfaceName() const
+  const std::string &CanBus::interface_name() const
   {
     return interface_name_;
   }

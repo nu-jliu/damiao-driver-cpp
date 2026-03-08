@@ -27,39 +27,39 @@ namespace dm
     return send_and_receive_(encode_special_(DISABLE_CMD));
   }
 
-  Feedback DmMotor::saveZeroPosition()
+  Feedback DmMotor::save_zero_position()
   {
     return send_and_receive_(encode_special_(SAVE_ZERO_CMD));
   }
 
-  Feedback DmMotor::clearError()
+  Feedback DmMotor::clear_error()
   {
     return send_and_receive_(encode_special_(CLEAR_ERROR_CMD));
   }
 
   // --- Control commands ---
 
-  Feedback DmMotor::sendMit(const float p_des, const float v_des, const float kp,
-                            const float kd, const float t_ff)
+  Feedback DmMotor::send_mit(const float p_des, const float v_des, const float kp,
+                             const float kd, const float t_ff)
   {
     return send_and_receive_(encode_mit_(p_des, v_des, kp, kd, t_ff));
   }
 
-  Feedback DmMotor::sendPositionSpeed(const float p_des, const float v_des)
+  Feedback DmMotor::send_position_speed(const float p_des, const float v_des)
   {
     return send_and_receive_(encode_position_speed_(p_des, v_des));
   }
 
-  Feedback DmMotor::sendSpeed(const float v_des)
+  Feedback DmMotor::send_speed(const float v_des)
   {
     return send_and_receive_(encode_speed_(v_des));
   }
 
   // --- Accessors ---
 
-  uint16_t DmMotor::motorId() const { return motor_id_; }
+  uint16_t DmMotor::motor_id() const { return motor_id_; }
 
-  const Feedback &DmMotor::lastFeedback() const { return last_feedback_; }
+  const Feedback &DmMotor::last_feedback() const { return last_feedback_; }
 
   // --- Private: Encode ---
 

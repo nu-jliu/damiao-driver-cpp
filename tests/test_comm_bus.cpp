@@ -18,7 +18,7 @@ TEST_CASE("CanBus creation with vcan0", "[can_bus]")
   {
     REQUIRE_NOTHROW(bus = dm::CanBus::create("vcan0"));
     REQUIRE(bus != nullptr);
-    REQUIRE(bus->interfaceName() == "vcan0");
+    REQUIRE(bus->interface_name() == "vcan0");
   }
 
   SECTION("create returns the same instance for the same interface")
@@ -59,7 +59,7 @@ TEST_CASE("UartBus creation with /tmp/ttyV0", "[uart_bus]")
   {
     REQUIRE_NOTHROW(bus = dm::UartBus::create("/tmp/ttyV0"));
     REQUIRE(bus != nullptr);
-    REQUIRE(bus->deviceName() == "/tmp/ttyV0");
+    REQUIRE(bus->device_name() == "/tmp/ttyV0");
   }
 
   SECTION("create returns the same instance for the same device")

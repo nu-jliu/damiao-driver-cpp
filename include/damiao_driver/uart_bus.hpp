@@ -39,7 +39,7 @@ namespace dm
     bool receive(CanFrame &frame, const int timeout_ms = 10) override;
 
     /// Returns the device path this bus is bound to
-    const std::string &deviceName() const;
+    const std::string &device_name() const;
 
   private:
 

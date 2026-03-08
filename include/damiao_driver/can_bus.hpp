@@ -34,7 +34,7 @@ namespace dm
     bool receive(CanFrame &frame, const int timeout_ms = 10) override;
 
     /// Returns the interface name this bus is bound to
-    const std::string &interfaceName() const;
+    const std::string &interface_name() const;
 
   private:
 

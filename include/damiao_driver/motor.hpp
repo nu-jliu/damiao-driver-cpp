@@ -27,18 +27,18 @@ namespace dm
     // --- Motor lifecycle ---
     Feedback enable();
     Feedback disable();
-    Feedback saveZeroPosition();
-    Feedback clearError();
+    Feedback save_zero_position();
+    Feedback clear_error();
 
     // --- Control commands (each returns motor feedback) ---
-    Feedback sendMit(const float p_des, const float v_des, const float kp,
-                     const float kd, const float t_ff);
-    Feedback sendPositionSpeed(const float p_des, const float v_des);
-    Feedback sendSpeed(const float v_des);
+    Feedback send_mit(const float p_des, const float v_des, const float kp,
+                      const float kd, const float t_ff);
+    Feedback send_position_speed(const float p_des, const float v_des);
+    Feedback send_speed(const float v_des);
 
     // --- Accessors ---
-    uint16_t motorId() const;
-    const Feedback &lastFeedback() const;
+    uint16_t motor_id() const;
+    const Feedback &last_feedback() const;
 
   private:
     CanFrame encode_mit_(const float p_des, const float v_des, const float kp,

@@ -67,7 +67,7 @@ namespace dm
 
   // --- Public interface ---
 
-  const std::string &UartBus::deviceName() const
+  const std::string &UartBus::device_name() const
   {
     return device_name_;
   }

@@ -24,7 +24,7 @@ int main()
     std::cout << "Enabled motor " << fb.motor_id << "\n";
 
     // Send MIT mode command: hold position at 0 with moderate stiffness
-    fb = motor_j4310.sendMit(0.0f, 0.0f, 50.0f, 1.0f, 0.0f);
+    fb = motor_j4310.send_mit(0.0f, 0.0f, 50.0f, 1.0f, 0.0f);
     std::cout << "Position: " << fb.position << " rad, "
               << "Velocity: " << fb.velocity << " rad/s, "
               << "Torque: " << fb.torque << " Nm\n";

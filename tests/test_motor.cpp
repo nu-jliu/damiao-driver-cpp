@@ -42,7 +42,7 @@ TEST_CASE("MIT mode encoding", "[motor]")
 
   SECTION("Zero command encodes to midpoints")
   {
-    motor.sendMit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    motor.send_mit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     const auto &fr = f.bus->last_sent;
 
     REQUIRE(fr.id == 0x01);
@@ -55,7 +55,7 @@ TEST_CASE("MIT mode encoding", "[motor]")
 
   SECTION("CAN ID is motor_id")
   {
-    motor.sendMit(1.0f, 2.0f, 10.0f, 1.0f, 0.5f);
+    motor.send_mit(1.0f, 2.0f, 10.0f, 1.0f, 0.5f);
     REQUIRE(f.bus->last_sent.id == 0x01);
   }
 }
@@ -70,7 +70,7 @@ TEST_CASE("Position-Speed mode encoding", "[motor]")
     const float p_des = 1.5f;
     const float v_des = 3.0f;
 
-    motor.sendPositionSpeed(p_des, v_des);
+    motor.send_position_speed(p_des, v_des);
     const auto &fr = f.bus->last_sent;
 
     REQUIRE(fr.id == 0x101);
@@ -94,7 +94,7 @@ TEST_CASE("Speed mode encoding", "[motor]")
   {
     const float v_des = 5.0f;
 
-    motor.sendSpeed(v_des);
+    motor.send_speed(v_des);
     const auto &fr = f.bus->last_sent;
 
     REQUIRE(fr.id == 0x202);
@@ -131,13 +131,13 @@ TEST_CASE("Special commands produce correct frames", "[motor]")
 
   SECTION("Save zero position command")
   {
-    motor.saveZeroPosition();
+    motor.save_zero_position();
     REQUIRE(f.bus->last_sent.data == dm::SAVE_ZERO_CMD);
   }
 
   SECTION("Clear error command")
   {
-    motor.clearError();
+    motor.clear_error();
     REQUIRE(f.bus->last_sent.data == dm::CLEAR_ERROR_CMD);
   }
 }
@@ -189,9 +189,9 @@ TEST_CASE("Accessor methods", "[motor]")
   BusFixture f;
   dm::DmMotor motor(f.bus, 0x05);
 
-  REQUIRE(motor.motorId() == 0x05);
+  REQUIRE(motor.motor_id() == 0x05);
 
-  const auto &fb = motor.lastFeedback();
+  const auto &fb = motor.last_feedback();
   REQUIRE(fb.motor_id == 0); // Default-initialized
 }
 
@@ -203,15 +203,15 @@ TEST_CASE("Wide CAN ID support", "[motor]")
   {
     dm::DmMotor motor(f.bus, 0x5FF);
 
-    REQUIRE(motor.motorId() == 0x5FF);
+    REQUIRE(motor.motor_id() == 0x5FF);
 
-    motor.sendMit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    motor.send_mit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     REQUIRE(f.bus->last_sent.id == 0x5FF);
 
-    motor.sendPositionSpeed(1.0f, 2.0f);
+    motor.send_position_speed(1.0f, 2.0f);
     REQUIRE(f.bus->last_sent.id == 0x6FF); // 0x100 + 0x5FF
 
-    motor.sendSpeed(1.0f);
+    motor.send_speed(1.0f);
     REQUIRE(f.bus->last_sent.id == 0x7FF); // 0x200 + 0x5FF
 
     motor.enable();
@@ -223,15 +223,15 @@ TEST_CASE("Wide CAN ID support", "[motor]")
   {
     dm::DmMotor motor(f.bus, 0x3A7);
 
-    REQUIRE(motor.motorId() == 0x3A7);
+    REQUIRE(motor.motor_id() == 0x3A7);
 
-    motor.sendMit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    motor.send_mit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     REQUIRE(f.bus->last_sent.id == 0x3A7);
 
-    motor.sendPositionSpeed(1.0f, 2.0f);
+    motor.send_position_speed(1.0f, 2.0f);
     REQUIRE(f.bus->last_sent.id == 0x4A7); // 0x100 + 0x3A7
 
-    motor.sendSpeed(1.0f);
+    motor.send_speed(1.0f);
     REQUIRE(f.bus->last_sent.id == 0x5A7); // 0x200 + 0x3A7
   }
 }
@@ -245,7 +245,7 @@ TEST_CASE("MotorType enum selects correct params", "[motor]")
     dm::DmMotor motor(f.bus, 0x01, dm::MotorType::DM_J4310);
     // J4310 has t_max=10.0, v_max=30.0
 
-    motor.sendMit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    motor.send_mit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     const auto &fr = f.bus->last_sent;
 
     // p_des=0 -> midpoint
@@ -258,7 +258,7 @@ TEST_CASE("MotorType enum selects correct params", "[motor]")
     dm::DmMotor motor(f.bus, 0x01, dm::MotorType::DM_J4340);
     // J4340 has t_max=28.0, v_max=10.0
 
-    motor.sendMit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    motor.send_mit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     const auto &fr = f.bus->last_sent;
 
     // p_des=0 -> midpoint (same regardless of motor type since p_max is same)
@@ -271,7 +271,7 @@ TEST_CASE("MotorType enum selects correct params", "[motor]")
     dm::MotorParams custom = {6.28f, 20.0f, 15.0f, 500.0f, 5.0f};
     dm::DmMotor motor(f.bus, 0x01, custom);
 
-    motor.sendMit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+    motor.send_mit(0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     const auto &fr = f.bus->last_sent;
 
     REQUIRE(fr.data.at(0) == 0x7F);
