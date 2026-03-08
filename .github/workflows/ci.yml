@@ -17,12 +17,17 @@ jobs:
           sudo apt-get install -y build-essential cmake libboost-system-dev socat
 
       - name: Set up vcan0
+        id: vcan
+        continue-on-error: true
         run: |
           sudo modprobe vcan
           sudo ip link add dev vcan0 type vcan
           sudo ip link set vcan0 up
 
       - name: Set up virtual serial port
+        id: serial
+        if: steps.vcan.outcome == 'success'
+        continue-on-error: true
         run: |
           socat PTY,link=/tmp/ttyV0,raw,echo=0 PTY,link=/tmp/ttyV1,raw,echo=0 &
           sleep 1
@@ -33,5 +38,10 @@ jobs:
       - name: Build
         run: cmake --build build -j$(nproc)
 
-      - name: Test
+      - name: Test (all)
+        if: steps.vcan.outcome == 'success' && steps.serial.outcome == 'success'
         run: ctest --test-dir build --output-on-failure
+
+      - name: Test (skip hardware tests)
+        if: steps.vcan.outcome != 'success' || steps.serial.outcome != 'success'
+        run: ctest --test-dir build --output-on-failure --exclude-regex test_comm_bus
