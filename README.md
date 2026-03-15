@@ -6,7 +6,7 @@
 ![Linux](https://img.shields.io/badge/Linux-SocketCAN-FCC624?logo=linux&logoColor=black)
 ![Catch2](https://img.shields.io/badge/Catch2-v3.8.1-green?logo=c&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow?logo=opensourceinitiative&logoColor=white)
-![CI](https://img.shields.io/github/actions/workflow/status/your-org/damiao-driver-cpp/ci.yml?branch=main&label=CI&logo=githubactions&logoColor=white)
+![CI](https://img.shields.io/github/actions/workflow/status/nu-jliu/damiao-driver-cpp/ci.yml?branch=main&label=CI&logo=githubactions&logoColor=white)
 
 A modern C++17 library for controlling [DaMiao](https://www.damiao.info/) actuators (DM-J4310, DM-J4340, and compatible) over **CAN bus** or **UART**, with a clean abstraction layer and zero-copy command encoding.
 
