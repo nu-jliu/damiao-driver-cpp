@@ -6,8 +6,9 @@
 ![Linux](https://img.shields.io/badge/Linux-SocketCAN-FCC624?logo=linux&logoColor=black)
 ![Catch2](https://img.shields.io/badge/Catch2-v3.8.1-green?logo=c&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow?logo=opensourceinitiative&logoColor=white)
+![CI](https://img.shields.io/github/actions/workflow/status/your-org/damiao-driver-cpp/ci.yml?branch=main&label=CI&logo=githubactions&logoColor=white)
 
-A modern C++17 library for controlling [DaMiao](https://www.damiao.info/) actuators (DM-J4310 and compatible) over **CAN bus** or **UART**, with a clean abstraction layer and zero-copy command encoding.
+A modern C++17 library for controlling [DaMiao](https://www.damiao.info/) actuators (DM-J4310, DM-J4340, and compatible) over **CAN bus** or **UART**, with a clean abstraction layer and zero-copy command encoding.
 
 ## Architecture
 
@@ -45,30 +46,36 @@ classDiagram
 
     class CanBus {
         -socket_fd_ : int
-        +CanBus(interface : string)
+        +create(interface : string)$ shared_ptr~CanBus~
         +send(CanFrame) void
         +receive(CanFrame, timeout_ms) bool
+        +interface_name() string
     }
 
     class UartBus {
         -io_ : io_context
         -port_ : serial_port
-        +UartBus(device : string, baud_rate : uint)
+        +create(device : string, baud_rate : uint)$ shared_ptr~UartBus~
         +send(CanFrame) void
         +receive(CanFrame, timeout_ms) bool
+        +device_name() string
     }
 
     class DmMotor {
-        -bus_ : CommBus&
+        -bus_ : shared_ptr~CommBus~
         -motor_id_ : uint16_t
         -params_ : MotorParams
+        +DmMotor(bus, motor_id, motor_type)
+        +DmMotor(bus, motor_id, params)
         +enable() Feedback
         +disable() Feedback
-        +sendMit(p, v, kp, kd, t) Feedback
-        +sendPositionSpeed(p, v) Feedback
-        +sendSpeed(v) Feedback
-        +saveZeroPosition() Feedback
-        +clearError() Feedback
+        +send_mit(p, v, kp, kd, t) Feedback
+        +send_position_speed(p, v) Feedback
+        +send_speed(v) Feedback
+        +save_zero_position() Feedback
+        +clear_error() Feedback
+        +motor_id() uint16_t
+        +last_feedback() Feedback
     }
 
     class MotorParams {
@@ -89,10 +96,17 @@ classDiagram
         +t_rotor : uint8_t
     }
 
+    class MotorType {
+        <<enumeration>>
+        DM_J4310
+        DM_J4340
+    }
+
     CommBus <|-- CanBus
     CommBus <|-- UartBus
     DmMotor --> CommBus : uses
     DmMotor --> MotorParams : configured by
+    DmMotor --> MotorType : selects preset
     DmMotor --> Feedback : returns
 ```
 
@@ -105,7 +119,7 @@ sequenceDiagram
     participant Bus as CommBus
     participant HW as Motor Hardware
 
-    App->>Motor: sendMit(p, v, kp, kd, t_ff)
+    App->>Motor: send_mit(p, v, kp, kd, t_ff)
     Motor->>Motor: encode to 8-byte CanFrame
     Motor->>Bus: send(frame)
     Bus->>HW: CAN / UART packet
@@ -120,26 +134,41 @@ sequenceDiagram
 ```
 damiao-driver-cpp/
 ├── CMakeLists.txt
+├── Doxyfile.in                       # Doxygen config template
+├── LICENSE                           # MIT License
 ├── include/damiao_driver/
-│   ├── damiao_driver.hpp          # single-include header
-│   ├── types.hpp           # enums, structs, conversions
-│   ├── comm_bus.hpp        # abstract bus interface
-│   ├── can_bus.hpp         # Linux SocketCAN
-│   ├── uart_bus.hpp        # Boost.ASIO serial
-│   └── motor.hpp           # motor control API
+│   ├── damiao_driver.hpp             # single-include convenience header
+│   ├── types.hpp                     # enums, structs, conversions
+│   ├── comm_bus.hpp                  # abstract bus interface
+│   ├── can_bus.hpp                   # Linux SocketCAN
+│   ├── uart_bus.hpp                  # Boost.ASIO serial
+│   └── motor.hpp                     # motor control API
 ├── src/
 │   ├── types.cpp
 │   ├── can_bus.cpp
 │   ├── uart_bus.cpp
 │   └── motor.cpp
 ├── examples/
-│   └── mit_control.cpp
+│   └── mit_control.cpp               # multi-motor MIT mode demo
 ├── tests/
-│   ├── test_types.cpp
-│   └── test_motor.cpp
-└── docs/
-    └── DM-J4310-en.pdf
+│   ├── test_types.cpp                # float/uint mapping tests
+│   ├── test_motor.cpp                # encoding, decoding, mock-bus tests
+│   └── test_comm_bus.cpp             # hardware integration tests (vcan0, serial)
+├── docs/
+│   ├── DM-J4310-en.pdf
+│   └── DM-J4340-en.pdf
+└── .github/workflows/
+    └── ci.yml                        # GitHub Actions CI
 ```
+
+## Supported Motors
+
+| Motor Type | Enum | Gear Ratio | Peak Torque | Max Velocity | Position Range |
+|---|---|---|---|---|---|
+| DM-J4310-2EC | `MotorType::DM_J4310` | 10:1 | 10.0 Nm | 30.0 rad/s | +/-12.5 rad |
+| DM-J4340-2EC | `MotorType::DM_J4340` | 40:1 | 28.0 Nm | 10.0 rad/s | +/-12.5 rad |
+
+Custom motor parameters can also be provided directly via `MotorParams`.
 
 ## Dependencies
 
@@ -148,8 +177,8 @@ damiao-driver-cpp/
 | **CMake** | >= 3.22 | Build system |
 | **C++ compiler** | C++17 | GCC 7+ / Clang 5+ |
 | **Boost** | any recent | `boost::asio` for UART communication |
-| **Linux headers** | — | `linux/can.h` for SocketCAN (CAN bus only) |
-| **Catch2** | 3.8.1 | Unit tests (fetched automatically) |
+| **Linux headers** | --- | `linux/can.h` for SocketCAN (CAN bus only) |
+| **Catch2** | 3.8.1 | Unit tests (fetched automatically via FetchContent) |
 | **Doxygen** | optional | API documentation generation |
 
 ## Recommended Hardware
@@ -172,15 +201,14 @@ sudo apt install -y build-essential cmake libboost-all-dev
 ```bash
 git clone https://github.com/your-org/damiao-driver-cpp.git
 cd damiao-driver-cpp
-mkdir build && cd build
-cmake ..
-make -j$(nproc)
+cmake -B build
+cmake --build build -j$(nproc)
 ```
 
 ### Install system-wide
 
 ```bash
-sudo make install
+sudo cmake --install build
 ```
 
 This installs headers to `/usr/local/include/damiao_driver/` and the library to `/usr/local/lib/`.
@@ -188,24 +216,24 @@ This installs headers to `/usr/local/include/damiao_driver/` and the library to 
 ### Build with tests
 
 ```bash
-cmake -DBUILD_TESTS=ON ..
-make -j$(nproc)
-ctest --output-on-failure
+cmake -B build -DBUILD_TESTS=ON
+cmake --build build -j$(nproc)
+ctest --test-dir build --output-on-failure
 ```
 
 ### Build with examples
 
 ```bash
-cmake -DBUILD_EXAMPLES=ON ..
-make -j$(nproc)
+cmake -B build -DBUILD_EXAMPLES=ON
+cmake --build build -j$(nproc)
 ```
 
 ### Build with documentation
 
 ```bash
 sudo apt install -y doxygen graphviz   # if not already installed
-cmake -DBUILD_DOCS=ON ..
-make docs
+cmake -B build -DBUILD_DOCS=ON
+cmake --build build --target docs
 # open build/docs/html/index.html
 ```
 
@@ -224,22 +252,26 @@ target_link_libraries(your_target PRIVATE damiao_driver::damiao_driver)
 #include <iostream>
 #include "damiao_driver/damiao_driver.hpp"
 
-int main() {
-  try {
-    dm::CanBus bus("can0");
-    dm::DmMotor motor(bus, 0x01);
+int main()
+{
+  try
+  {
+    auto bus = dm::CanBus::create("can0");
+    dm::DmMotor motor(bus, 0x01, dm::MotorType::DM_J4310);
 
     auto fb = motor.enable();
     std::cout << "Enabled motor " << fb.motor_id << "\n";
 
     // Hold position at 0 rad with Kp=50, Kd=1
-    fb = motor.sendMit(0.0f, 0.0f, 50.0f, 1.0f, 0.0f);
+    fb = motor.send_mit(0.0f, 0.0f, 50.0f, 1.0f, 0.0f);
     std::cout << "Pos: " << fb.position << " rad  "
               << "Vel: " << fb.velocity << " rad/s  "
               << "Torque: " << fb.torque << " Nm\n";
 
     motor.disable();
-  } catch (const std::exception & e) {
+  }
+  catch (const std::exception &e)
+  {
     std::cerr << "Error: " << e.what() << "\n";
     return 1;
   }
@@ -249,27 +281,41 @@ int main() {
 ### UART Communication
 
 ```cpp
-dm::UartBus bus("/dev/ttyUSB0", 921600);
+auto bus = dm::UartBus::create("/dev/ttyUSB0", 921600);
 dm::DmMotor motor(bus, 0x01);
 // same motor API — only the transport changes
+```
+
+### Multiple Motors on the Same Bus
+
+Bus instances are singletons -- calling `create()` with the same interface returns the same `shared_ptr`:
+
+```cpp
+auto bus = dm::CanBus::create("can0");
+
+dm::DmMotor motor_j4310(bus, 0x01, dm::MotorType::DM_J4310);
+dm::DmMotor motor_j4340(bus, 0x02, dm::MotorType::DM_J4340);
+
+// Both motors share the same CAN bus instance
+assert(dm::CanBus::create("can0") == bus);
 ```
 
 ### Position-Speed & Speed Modes
 
 ```cpp
 // Position-speed mode
-fb = motor.sendPositionSpeed(1.57f, 5.0f);  // 1.57 rad at 5 rad/s
+fb = motor.send_position_speed(1.57f, 5.0f);  // 1.57 rad at 5 rad/s
 
 // Speed mode
-fb = motor.sendSpeed(10.0f);                 // 10 rad/s
+fb = motor.send_speed(10.0f);                  // 10 rad/s
 ```
 
 ### Motor Lifecycle
 
 ```cpp
 motor.enable();
-motor.saveZeroPosition();  // calibrate current position as zero
-motor.clearError();        // reset fault flags
+motor.save_zero_position();  // calibrate current position as zero
+motor.clear_error();         // reset fault flags
 motor.disable();
 ```
 
@@ -284,6 +330,16 @@ dm::MotorParams custom = {
   .kd_max = 5.0f,
 };
 dm::DmMotor motor(bus, 0x01, custom);
+```
+
+### Selecting Motor Type by Enum
+
+```cpp
+// Use built-in presets instead of specifying params manually
+dm::DmMotor motor(bus, 0x01, dm::MotorType::DM_J4340);
+
+// Or look up params programmatically
+dm::MotorParams params = dm::motor_params_for(dm::MotorType::DM_J4340);
 ```
 
 ### CAN Interface Setup (Linux)
@@ -310,19 +366,19 @@ graph LR
         M3[Kp] --> MIT
         M4[Kd] --> MIT
         M5[t_ff] --> MIT
-        MIT[sendMit] --> R1[Feedback]
+        MIT[send_mit] --> R1[Feedback]
     end
 
     subgraph Position-Speed Mode
         direction TB
-        P1[p_des] --> PS[sendPositionSpeed]
+        P1[p_des] --> PS[send_position_speed]
         P2[v_des] --> PS
         PS --> R2[Feedback]
     end
 
     subgraph Speed Mode
         direction TB
-        S1[v_des] --> SP[sendSpeed]
+        S1[v_des] --> SP[send_speed]
         SP --> R3[Feedback]
     end
 
@@ -339,26 +395,65 @@ graph LR
 
 > Motor ID (`uint16_t`) supports values from `0x01` to `0x5FF`.
 
-## DM-J4310 Default Limits
+## Motor Parameter Defaults
+
+### DM-J4310
 
 | Parameter | Range | Unit |
 |---|---|---|
 | Position | -12.5 to +12.5 | rad |
 | Velocity | -30.0 to +30.0 | rad/s |
 | Torque | -10.0 to +10.0 | Nm |
-| Kp | 0 to 500.0 | — |
-| Kd | 0 to 5.0 | — |
+| Kp | 0 to 500.0 | --- |
+| Kd | 0 to 5.0 | --- |
+
+### DM-J4340
+
+| Parameter | Range | Unit |
+|---|---|---|
+| Position | -12.5 to +12.5 | rad |
+| Velocity | -10.0 to +10.0 | rad/s |
+| Torque | -28.0 to +28.0 | Nm |
+| Kp | 0 to 500.0 | --- |
+| Kd | 0 to 5.0 | --- |
+
+## Error Codes
+
+| Error | Value | Description |
+|---|---|---|
+| `MotorError::None` | 0x0 | No error |
+| `MotorError::Overvoltage` | 0x8 | Supply voltage too high |
+| `MotorError::Undervoltage` | 0x9 | Supply voltage too low |
+| `MotorError::Overcurrent` | 0xA | Current limit exceeded |
+| `MotorError::MosOvertemp` | 0xB | MOSFET over-temperature |
+| `MotorError::MotorOvertemp` | 0xC | Motor winding over-temperature |
+| `MotorError::CommLoss` | 0xD | Communication lost |
+| `MotorError::Overload` | 0xE | Mechanical overload |
 
 ## Running Tests
 
 ```bash
-cd build
-cmake -DBUILD_TESTS=ON ..
-make -j$(nproc)
-ctest --output-on-failure
+cmake -B build -DBUILD_TESTS=ON
+cmake --build build -j$(nproc)
+ctest --test-dir build --output-on-failure
 ```
 
 Tests cover:
 
-- `test_types` — float/uint linear mapping, boundary clamping, round-trip accuracy
-- `test_motor` — MIT/position-speed/speed encoding, feedback decoding, CAN ID assignment
+- `test_types` -- float/uint linear mapping, boundary clamping, round-trip accuracy, `motor_params_for()` lookup
+- `test_motor` -- MIT/position-speed/speed encoding, feedback decoding, CAN ID assignment, wide motor ID support, `MotorType` preset selection, special command frames
+- `test_comm_bus` -- CanBus/UartBus singleton factory, hardware integration (requires `vcan0` and `/tmp/ttyV0`)
+
+> **Note:** `test_comm_bus` requires a live `vcan0` interface and `/tmp/ttyV0` virtual serial port. See [CAN Interface Setup](#can-interface-setup-linux) for `vcan0` setup.
+
+## CI
+
+This project uses GitHub Actions for continuous integration. The workflow (`.github/workflows/ci.yml`) runs on every push to `main` and:
+
+- Builds the library, tests, and examples on Ubuntu 24.04
+- Sets up `vcan0` and a virtual serial port via `socat`
+- Runs all tests, gracefully skipping hardware-dependent tests if the virtual interfaces are unavailable
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
